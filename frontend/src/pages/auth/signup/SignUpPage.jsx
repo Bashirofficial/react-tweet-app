@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 import XSvg from "../../../components/svgs/X";
 
@@ -7,9 +7,10 @@ import { MdOutlineMail } from "react-icons/md";
 import { FaUser } from "react-icons/fa";
 import { MdPassword } from "react-icons/md";
 import { MdDriveFileRenameOutline } from "react-icons/md";
-import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import axios from "axios";
+
+import { useUser } from "../../../context/UserContextProvider";
+
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -18,44 +19,32 @@ const SignUpPage = () => {
     password: "",
   });
 
-  const { mutate, isError, isPending, error } = useMutation({
-    mutationFn: async ({ email, username, fullName, password }) => {
-      try {
-        const res = await axios.post(
-          "api/v1/users/register",
-          {
-            email,
-            username,
-            fullName,
-            password,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const navigate = useNavigate();
+  const { registerUser, user } = useUser();
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-        console.log(res.data.data);
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success("Account created successfully");
-    },
-    onError: (err) => {
-      console.error(err);
-      const errorMessage = err.response?.data?.message;
-      toast.error(errorMessage);
-    },
-  });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    mutate(formData);
+    setIsSubmitting(true);
+
+    try {
+      await registerUser(formData);
+      toast.success("Registration successful");
+      navigate("/");
+    } catch (error) {
+      toast.error(error.message || "Signup failed");
+      setError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -119,14 +108,13 @@ const SignUpPage = () => {
               value={formData.password}
             />
           </label>
-          <button className="btn rounded-full btn-primary text-white">
-            {isPending ? "Loading..." : "Sign up"}
+          <button
+            className="btn rounded-full btn-primary text-white"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Loading..." : "Sign up"}
           </button>
-          {isError && (
-            <p className="text-red-500">
-              {error?.response?.data?.message || error.message}
-            </p>
-          )}
+          {error && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
           <p className="text-white text-lg">Already have an account?</p>

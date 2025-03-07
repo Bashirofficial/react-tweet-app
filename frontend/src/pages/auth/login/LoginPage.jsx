@@ -1,14 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import XSvg from "../../../components/svgs/X";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "../../../context/UserContextProvider";
 import toast from "react-hot-toast";
-import axios from "axios";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -16,49 +14,32 @@ const LoginPage = () => {
     password: "",
   });
 
-  const queryClient = useQueryClient();
-  const {
-    mutate: loginMutation,
-    isError,
-    isPending,
-    error,
-  } = useMutation({
-    mutationFn: async ({ email, username, password }) => {
-      try {
-        const res = await axios.post(
-          "/api/v1/users/login",
-          {
-            email,
-            username,
-            password,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { loginUser } = useUser();
 
-        console.log(res.data.data);
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      //refetch the authUser
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      toast.success("Logged In successfully");
-    },
-  });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    loginMutation(formData);
+    setIsSubmitting(true);
+
+    try {
+      await loginUser(formData.username, formData.password);
+      toast.success("Login successful!");
+      navigate("/");
+    } catch (error) {
+      toast.error(error.message || "Login failed");
+      setError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   return (
@@ -93,14 +74,14 @@ const LoginPage = () => {
               value={formData.password}
             />
           </label>
-          <button className="btn rounded-full btn-primary text-white">
-            {isPending ? "Loading..." : "Login"}
+          <button
+            type="submit"
+            className="btn rounded-full btn-primary text-white"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
-          {isError && (
-            <p className="text-red-500">
-              {error?.response?.data?.message || error.message}
-            </p>
-          )}
+          {error && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col gap-2 mt-4">
           <p className="text-white text-lg">{"Don't"} have an account?</p>

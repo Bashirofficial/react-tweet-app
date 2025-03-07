@@ -12,47 +12,64 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useUser } from "../../context/UserContextProvider";
 
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
   const [feedType, setFeedType] = useState("posts");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
+  const [profileUser, setProfileUser] = useState(null);
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
   const { username } = useParams();
+  const { user } = useUser();
+  const isMyProfile = user?._id === profileUser?._id;
 
   //const { follow, isPending } = useFollow();
-  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
-
-  const {
-    data: user,
-    isLoading,
-    refetch,
-    isRefetching,
-  } = useQuery({
-    queryKey: ["userProfile"],
-    queryFn: async () => {
-      try {
-        const res = await axios.get(`/api/users/profile/${username}`);
-
-        if (!res.ok) {
-          throw new Error(data.error || "Something went wrong");
-        }
-        return res.data;
-      } catch (error) {
-        throw error;
-      }
-    },
-  });
 
   //const { isUpdatingProfile, updateProfile } = useUpdateUserProfile();
 
-  const isMyProfile = authUser._id === user?._id;
   // const memberSinceDate = formatMemberSinceDate(user?.createdAt);
   //const amIFollowing = authUser?.following.includes(user?._id);
+  /*
+  const handleFollow = async () => {
+    try {
+      // Add follow logic here
+      await axios.post(`/api/v1/users/follow/${profileUser?._id}`);
+      refetch(); // Refresh user data after following
+    } catch (error) {
+      console.error("Error following user:", error);
+    }
+  };
+  
+   const handleUpdateProfile = async () => {
+    try {
+      const formData = new FormData();
+      if (coverImg) {
+        // Convert base64 to File object if needed
+        formData.append('coverImg', coverImg);
+      }
+      if (profileImg) {
+        formData.append('profileImg', profileImg);
+      }
+      
+      await axios.patch('/api/v1/users/update-profile', formData);
+      
+      // Reset states after successful update
+      setCoverImg(null);
+      setProfileImg(null);
+      
+      // Refresh user data
+      refetch();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
+  */
 
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
@@ -66,9 +83,27 @@ const ProfilePage = () => {
     }
   };
 
+  const fetchUserData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`/api/v1/users/profile/${username}`);
+      setProfileUser(response.data.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setProfileUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refetch = () => {
+    setIsRefetching(true);
+    fetchUserData().finally(() => setIsRefetching(false));
+  };
+
   useEffect(() => {
     refetch();
-  }, [username, refetch]);
+  }, [username]);
   return (
     <>
       <div className="flex-[4_4_0]  border-r border-gray-700 min-h-screen ">
