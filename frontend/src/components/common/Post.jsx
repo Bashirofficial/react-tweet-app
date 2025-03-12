@@ -5,25 +5,54 @@ import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
+  const { user } = useUser();
   const postOwner = post.user;
-  const isLiked = false;
+  const isLiked = post.likes.includes(user?._id);
+  const isMyPost = user?._id === postOwner._id;
+  const formattedDate = formatPostDate(post.createdAt);
+  const [isCommenting, setIsCommenting] = useState(false);
 
-  const isMyPost = true;
-
-  const formattedDate = "1h";
-
-  const isCommenting = false;
-
-  const handleDeletePost = () => {};
-
-  const handlePostComment = (e) => {
-    e.preventDefault();
+  const handleDeletePost = async () => {
+    try {
+      await fetch(`/api/v1/posts/${post._id}`, { method: "DELETE" });
+      // Handle UI update here
+    } catch (error) {
+      console.error("Failed to delete post", error);
+    }
   };
 
-  const handleLikePost = () => {};
+  const handlePostComment = async (e) => {
+    e.preventDefault();
+    setIsCommenting(true);
+    try {
+      await fetch(`/api/v1/posts/${post._id}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: comment, userId: user._id }),
+      });
+      setComment("");
+    } catch (error) {
+      console.error("Failed to post comment", error);
+    } finally {
+      setIsCommenting(false);
+    }
+  };
+
+  const handleLikePost = async () => {
+    try {
+      await fetch(`/api/v1/posts/${post._id}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user._id }),
+      });
+    } catch (error) {
+      console.error("Failed to like post", error);
+    }
+  };
 
   return (
     <>
