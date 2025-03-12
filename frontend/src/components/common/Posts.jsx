@@ -1,9 +1,23 @@
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
 import { POSTS } from "../../utils/db/dummy";
+import { useUser } from "../../context/UserContextProvider";
 
-const Posts = () => {
+const Posts = ({ feedType }) => {
   const isLoading = false;
+
+  const getPostEndpoint = () => {
+    switch (feedType) {
+      case "forYou":
+        return "/api/posts/all";
+      case "following":
+        return "/api/posts/following";
+      default:
+        return "/api/posts/all";
+    }
+  };
+  const POST_ENDPOINT = getPostEndpoint();
+  const { user } = useUser();
 
   return (
     <>

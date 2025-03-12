@@ -18,11 +18,6 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(bodyParser.json());
-
-import userRouter from "./src/routes/user.routes.js";
-
-app.use("/api/v1/users", userRouter);
-
 app.use((err, req, res, next) => {
   console.error(err);
 
@@ -43,5 +38,11 @@ app.use((err, req, res, next) => {
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 });
+
+import userRouter from "./src/routes/user.routes.js";
+import postRouter from "./src/routes/post.routes.js";
+
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/posts", postRouter);
 
 export { app };
