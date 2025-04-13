@@ -64,8 +64,10 @@ const Posts = ({ feedType, username, userId, posts }) => {
   */
   }
   //const displayPosts = posts.filter((post) => post && post._id);
-  const displayPosts = posts?.length > 0 ? posts : fetchedPosts;
-
+  //const displayPosts = posts?.length > 0 ? posts : fetchedPosts;
+  const displayPosts = (
+    posts && posts.length > 0 ? posts : fetchedPosts
+  ).filter((post) => post && post._id);
   return (
     <>
       {isLoading && (
@@ -76,14 +78,14 @@ const Posts = ({ feedType, username, userId, posts }) => {
         </div>
       )}
 
-      {!isLoading && displayPosts?.length === 0 && (
+      {!isLoading && displayPosts.length === 0 && (
         <p className="text-center my-4">No posts in this tab. Switch 👻</p>
       )}
       {!isLoading && displayPosts.length > 0 && (
         <div>
-          {posts.map((post) => (
-            <Post key={post._id} post={post} />
-          ))}
+          {displayPosts.map(
+            (post) => post && post._id && <Post key={post._id} post={post} />
+          )}
         </div>
       )}
     </>

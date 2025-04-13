@@ -46,9 +46,13 @@ const createPost = asyncHandler(async (req, res) => {
 
   await post.save();
 
+  const populatedPost = await Post.findById(post._id)
+    .populate({ path: "user", select: "-password" })
+    .populate({ path: "comments.user", select: "-password" });
+
   return res
     .status(200)
-    .json(new ApiResponse(200, post, "User has done a post"));
+    .json(new ApiResponse(200, populatedPost, "User has done a post"));
 });
 
 const deletePost = asyncHandler(async (req, res) => {
