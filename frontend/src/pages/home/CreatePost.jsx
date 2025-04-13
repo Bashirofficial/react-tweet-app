@@ -2,23 +2,56 @@ import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
 import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
-
-const CreatePost = () => {
+import axios from "axios";
+const CreatePost = ({ onPostCreated }) => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
 
   const imgRef = useRef(null);
 
-  const isPending = false;
-  const isError = false;
+  const [isPosting, setIsPosting] = useState(false);
+  const [error, setError] = useState("");
 
   const data = {
     profileImg: "/avatars/boy1.png",
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    setIsPosting(true);
+    setError("");
+
+    const formData = new FormData();
+    formData.append("text", text);
+    if (img) formData.append("img", img);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post("/api/v1/posts/create", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Post created:", response.data);
+      console.log("onPostCreated payload:", response.data.data);
+
+      if (onPostCreated) {
+        onPostCreated(response.data.data);
+      }
+      setText("");
+      setImg(null);
+      imgRef.current.value = null;
+      // alert("Post created successfully!");
+      console.log("API Response from Create:", response.data);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      setError(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleImgChange = (e) => {
@@ -77,11 +110,14 @@ const CreatePost = () => {
             ref={imgRef}
             onChange={handleImgChange}
           />
-          <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-            {isPending ? "Posting..." : "Post"}
+          <button
+            className="btn btn-primary rounded-full btn-sm text-white px-4"
+            disabled={isPosting}
+          >
+            {isPosting ? "Posting..." : "Post"}
           </button>
         </div>
-        {isError && <div className="text-red-500">Something went wrong</div>}
+        {error && <div className="text-red-500">{error}</div>}
       </form>
     </div>
   );

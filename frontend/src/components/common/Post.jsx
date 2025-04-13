@@ -6,15 +6,21 @@ import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatPostDate } from "../../utils/date";
+import { useUser } from "../../context/UserContextProvider";
+//import { toast } from "react-hot-toast";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const { user } = useUser();
   const postOwner = post.user;
-  const isLiked = post.likes.includes(user?._id);
+  const [isLiked, setIsLiked] = useState(post.likes.includes(user?._id));
+
   const isMyPost = user?._id === postOwner._id;
   const formattedDate = formatPostDate(post.createdAt);
   const [isCommenting, setIsCommenting] = useState(false);
+
+  const [loading, setLoading] = useState(false);
 
   const handleDeletePost = async () => {
     try {
@@ -29,7 +35,7 @@ const Post = ({ post }) => {
     e.preventDefault();
     setIsCommenting(true);
     try {
-      await fetch(`/api/v1/posts/${post._id}/comment`, {
+      await fetch(`/api/v1/posts/comment/${post._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: comment, userId: user._id }),
@@ -43,14 +49,18 @@ const Post = ({ post }) => {
   };
 
   const handleLikePost = async () => {
+    setLoading(true);
     try {
-      await fetch(`/api/v1/posts/${post._id}/like`, {
+      await fetch(`/api/v1/posts/like/${post._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user._id }),
+        //body: JSON.stringify({ userId: user._id }),
       });
+      setIsLiked(!isLiked);
     } catch (error) {
       console.error("Failed to like post", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -183,10 +193,11 @@ const Post = ({ post }) => {
                 className="flex gap-1 items-center group cursor-pointer"
                 onClick={handleLikePost}
               >
-                {!isLiked && (
+                {loading && <LoadingSpinner size="sm" />}
+                {!isLiked && !loading && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
-                {isLiked && (
+                {isLiked && !loading && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500 " />
                 )}
 

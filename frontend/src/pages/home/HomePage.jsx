@@ -1,10 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import Posts from "../../components/common/Posts";
 import CreatePost from "./CreatePost";
-
+import { useUser } from "../../context/UserContextProvider";
 const HomePage = () => {
+  const { user } = useUser();
   const [feedType, setFeedType] = useState("forYou");
+  const [posts, setPosts] = useState([]);
+
+  // Callback function to update posts after creating a post
+  const handlePostCreated = (newPost) => {
+    if (newPost && newPost._id) {
+      console.log("New Post Created:", newPost);
+      setPosts((prevPosts) => [newPost, ...prevPosts]); // Add new post to the top of the feed
+    } else {
+      console.error("Invalid post data:", newPost);
+    }
+  };
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch(`/api/v1/posts/all`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load posts");
+        }
+
+        const result = await res.json();
+        console.log("Fetched posts:", result.data); // Log fetched data
+        setPosts(result.data); // Update the state with fetched posts
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
+    };
+
+    fetchPosts(); // Call the fetch function when the component mounts
+  }, []);
 
   return (
     <>
@@ -34,10 +72,15 @@ const HomePage = () => {
         </div>
 
         {/*  CREATE POST INPUT */}
-        <CreatePost />
+        <CreatePost onPostCreated={handlePostCreated} />
 
         {/* POSTS */}
-        <Posts />
+        <Posts
+          feedType={feedType}
+          username={user?.username}
+          userId={user?._id}
+          posts={posts}
+        />
       </div>
     </>
   );

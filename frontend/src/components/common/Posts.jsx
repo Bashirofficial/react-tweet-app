@@ -1,26 +1,26 @@
 import Post from "./Post";
 import PostSkeleton from "../skeletons/PostSkeleton";
-import { POSTS } from "../../utils/db/dummy";
+//import { POSTS } from "../../utils/db/dummy";
 import { useUser } from "../../context/UserContextProvider";
 import { useState, useEffect } from "react";
 
-const Posts = ({ feedType, username, userId }) => {
-  const { isLoading: isUserLoading } = useUser();
-  const [posts, setPosts] = useState([]);
+const Posts = ({ feedType, username, userId, posts }) => {
+  //const { isLoading: isUserLoading } = useUser();
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchedPosts, setFetchedPosts] = useState([]);
 
   const getPostEndpoint = () => {
     switch (feedType) {
       case "forYou":
-        return "/api/posts/all";
+        return "/api/v1/posts/all";
       case "following":
-        return "/api/posts/following";
+        return "/api/v1/posts/following";
       case "posts":
-        return `/api/posts/user/${username}`;
+        return `/api/v1/posts/user/${username}`;
       case "likes":
-        return `/api/posts/likes/${userId}`;
+        return `/api/v1/posts/likes/${userId}`;
       default:
-        return "/api/posts/all";
+        return "/api/v1/posts/all";
     }
   };
 
@@ -28,24 +28,44 @@ const Posts = ({ feedType, username, userId }) => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      setIsLoading(true);
-
       try {
-        const response = await axios.get(POST_ENDPOINT);
-        setPosts(response.data); // Updating the posts state here
-      } catch (err) {
-        console.error(err.response?.data?.error || "Failed to load posts");
+        if (posts.length === 0) {
+          const res = await fetch(POST_ENDPOINT, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to load posts");
+          }
+
+          const result = await res.json();
+          //console.log("Posts fetched:", result);
+          setFetchedPosts(result.data);
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPosts();
-  }, [feedType, username, userId]);
+  }, [feedType]);
 
-  if (isUserLoading) {
-    return <p className="text-center my-4">Loading user...</p>;
+  {
+    /*
+    if (isUserLoading) {
+      return <p className="text-center my-4">Loading user...</p>;
+    }
+  */
   }
+  //const displayPosts = posts.filter((post) => post && post._id);
+  const displayPosts = posts?.length > 0 ? posts : fetchedPosts;
+
   return (
     <>
       {isLoading && (
@@ -56,10 +76,10 @@ const Posts = ({ feedType, username, userId }) => {
         </div>
       )}
 
-      {!isLoading && posts?.length === 0 && (
+      {!isLoading && displayPosts?.length === 0 && (
         <p className="text-center my-4">No posts in this tab. Switch 👻</p>
       )}
-      {!isLoading && posts.length > 0 && (
+      {!isLoading && displayPosts.length > 0 && (
         <div>
           {posts.map((post) => (
             <Post key={post._id} post={post} />

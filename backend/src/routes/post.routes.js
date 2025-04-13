@@ -33,7 +33,7 @@ router.post(
 );
 router.post("/like/:id", verifyJWT, likeUnlikePost);
 router.post("/comment/:id", verifyJWT, commentOnPost);
-router.post("/update/:id", verifyJWT, updateComment);
+router.put("/update/:id", verifyJWT, updateComment);
 router.delete("/:id", verifyJWT, deletePost);
 
 export default router;
